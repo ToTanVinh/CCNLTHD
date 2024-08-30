@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "ClinicManagementSystem",
+    "slug": "ClinicManagementSystem",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  },
+  "name": "ClinicManagementSystem"
+}

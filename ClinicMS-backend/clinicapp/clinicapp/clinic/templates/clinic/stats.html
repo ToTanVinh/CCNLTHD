@@ -1,0 +1,225 @@
+{% extends 'clinic/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Thống kê</h1>
+
+    <form action="{% url 'stats' %}" method="get" onsubmit="return prepareFormSubmission()">
+        <div id="type">
+            <label for="stats_type">Loại thống kê:</label>
+            <select id="stats_type" name="type" onchange="handleStatsTypeChange()">
+                <option value="month" {% if stats_type == 'month' %}selected{% endif %}>Theo tháng</option>
+                <option value="quarter" {% if stats_type == 'quarter' %}selected{% endif %}>Theo quý</option>
+                <option value="year" {% if stats_type == 'year' %}selected{% endif %}>Theo năm</option>
+            </select>
+        </div>
+
+        <div id="year" style="display: none">
+            <label for="start_year">Năm</label>
+            <input type="text" id="year_start" name="start_year" value="{{ request.GET.start_year }}" min="2000" max="2100">
+        </div>
+
+        <div id="yearFields" style="display: none">
+            <label for="start_year">Từ năm</label>
+            <input type="text" id="start_year" name="start_year" value="{{ request.GET.start_year }}" min="2000" max="2100">
+            <label for="end_year" style="margin-left: 10px">Đến năm</label>
+            <input type="text" id="end_year" name="end_year" value="{{ request.GET.end_year }}" min="2000" max="2100">
+        </div>
+        <button type="submit">Thống kê</button>
+    </form>
+
+    {% if stats_type == 'month' or stats_type == 'all' %}
+        <h2>Thống kê theo tháng</h2>
+        <canvas id="combined-chart"></canvas>
+        <script>
+            // Biểu đồ tháng
+            var ctxCombined = document.getElementById('combined-chart').getContext('2d');
+            var combinedChart = new Chart(ctxCombined, {
+                type: 'bar',
+                data: {
+                    labels: [{% for data in month_data %} 'Tháng {{ data.month }}', {% endfor %}],
+                    datasets: [
+                        {
+                            label: 'Số lượng bệnh nhân đã khám',
+                            data: [{% for data in month_data %} {{ data.patient_count }}, {% endfor %}],
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'patients-y-axis',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Doanh thu',
+                            data: [{% for data in month_data %} {{ data.revenue }}, {% endfor %}],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            lineTension: 0.4,
+                            yAxisID: 'revenue-y-axis',
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        'patients-y-axis': { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Số lượng bệnh nhân đã khám', }, },
+                        'revenue-y-axis': { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Doanh thu', }, },
+                    },
+                    plugins: { legend: { display: true, position: 'top' } }
+                }
+            });
+        </script>
+    {% endif %}
+
+    {% if stats_type == 'quarter' or stats_type == 'all' %}
+        <h2>Thống kê theo quý</h2>
+        <canvas id="combined-quarter-chart"></canvas>
+        <script>
+            // Biểu đồ quý
+            var ctxCombinedQuarter = document.getElementById('combined-quarter-chart').getContext('2d');
+            var combinedQuarterChart = new Chart(ctxCombinedQuarter, {
+                type: 'bar',
+                data: {
+                    labels: [{% for data in quarter_data %} 'Quý {{ data.quarter }}', {% endfor %}],
+                    datasets: [
+                        {
+                            label: 'Số lượng bệnh nhân đã khám',
+                            data: [{% for data in quarter_data %} {{ data.patient_count }}, {% endfor %}],
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'patients-quarter-y-axis',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Doanh thu',
+                            data: [{% for data in quarter_data %} {{ data.revenue }}, {% endfor %}],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            lineTension: 0.4,
+                            yAxisID: 'revenue-quarter-y-axis',
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        'patients-quarter-y-axis': { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Số lượng bệnh nhân đã khám', }, },
+                        'revenue-quarter-y-axis': { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Doanh thu', }, },
+                    },
+                    plugins: { legend: { display: true, position: 'top' } }
+                }
+            });
+        </script>
+    {% endif %}
+
+    {% if stats_type == 'year' or stats_type == 'all' %}
+        <h2>Thống kê theo năm</h2>
+        <canvas id="combined-year-chart"></canvas>
+        <script>
+            // Biểu đồ năm
+            var ctxCombinedYear = document.getElementById('combined-year-chart').getContext('2d');
+            var combinedYearChart = new Chart(ctxCombinedYear, {
+                type: 'bar',
+                data: {
+                    labels: [{% for data in year_data %} '{{ data.year }}', {% endfor %}],
+                    datasets: [
+                        {
+                            label: 'Số lượng bệnh nhân đã khám',
+                            data: [{% for data in year_data %} {{ data.patient_count }}, {% endfor %}],
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'patients-year-y-axis',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Doanh thu',
+                            data: [{% for data in year_data %} {{ data.revenue }}, {% endfor %}],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            lineTension: 0.4,
+                            yAxisID: 'revenue-year-y-axis',
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        'patients-year-y-axis': { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Số lượng bệnh nhân đã khám', }, },
+                        'revenue-year-y-axis': { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Doanh thu', }, },
+                    },
+                    plugins: { legend: { display: true, position: 'top' } }
+                }
+            });
+        </script>
+    {% endif %}
+
+    {% if stats_type is None %}
+        <p>Vui lòng chọn loại thống kê ở trên, nhập năm và nhấn nút "Thống kê".</p>
+    {% endif %}
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Check the initial value of stats_type and trigger handleStatsTypeChange
+        var initialStatsType = document.getElementById('stats_type').value;
+        handleStatsTypeChange(initialStatsType);
+    });
+
+    function handleStatsTypeChange(statsType) {
+        // Rest of your existing function
+
+        // Additional logic for handling stats_type 'month'
+        if (statsType === 'month') {
+            // Additional actions you want to perform for 'month' type
+            // For example, display specific content or make an AJAX request
+            console.log('Selected stats_type: month');
+        }
+    }
+    function handleStatsTypeChange() {
+        var statsType = document.getElementById('stats_type').value;
+        if (statsType === 'month' || statsType === 'quarter') {
+            document.getElementById('year').style.display = 'block';
+        } else {
+            document.getElementById('year').style.display = 'none';
+        }
+        if (statsType === 'year') {
+            document.getElementById('yearFields').style.display = 'block';
+        } else {
+            document.getElementById('yearFields').style.display = 'none';
+        }
+    }
+    function prepareFormSubmission() {
+        var statsType = document.getElementById('stats_type').value;
+
+        // Include relevant fields based on statsType
+        if (statsType === 'month' || statsType === 'quarter') {
+            if (!validateYearInput(document.getElementById('year_start'))) {
+                return false;
+            }
+            document.getElementById('start_year').removeAttribute('name');
+            document.getElementById('end_year').removeAttribute('name');
+        } else if (statsType === 'year') {
+            if (!validateYearInput(document.getElementById('start_year')) || !validateYearInput(document.getElementById('end_year'))) {
+                return false;
+            }
+            else if (parseInt(document.getElementById('start_year').value, 10) > parseInt(document.getElementById('end_year').value, 10)) {
+                alert("Năm bắt đầu phải nhỏ hơn hoặc bằng năm kết thúc.");
+                return false;
+            }
+            document.getElementById('year_start').removeAttribute('name');
+            document.getElementById('start_year').setAttribute('name', 'start_year');
+            document.getElementById('end_year').setAttribute('name', 'end_year');
+        }
+
+        return true;  // Allow the form to be submitted
+    }
+    function validateYearInput(yearInput) {
+        var year = parseInt(yearInput.value, 10);
+        if (isNaN(year) || year < 2000 || year > 2100) {
+            alert("Vui lòng nhập năm (từ 2000 đến 2100).");
+            return false;
+        }
+        return true;
+    }
+</script>
+{% endblock content %}
